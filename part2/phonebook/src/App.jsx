@@ -1,96 +1,67 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 
-const Filter = ({ onNameFilterChange, resetFilters }) => {
-  const [nameFilter, setNameFilter] = useState("");
-
-  useEffect(() => {
-    setNameFilter("");
-  }, [resetFilters]);
-
-  const handleNameFilter = (event) => {
-    const searchText = event.target.value;
-    setNameFilter(searchText);
-    onNameFilterChange(searchText);
-  };
-
-  return (
-    <div>
-      filter shown with:{" "}
-      <input value={nameFilter} onChange={handleNameFilter} />
-    </div>
-  );
-};
-
-const PersonForm = ({ onNewPersonAdded }) => {
-  const [newName, setNewName] = useState("");
-  const [newNumber, setNewNumber] = useState("");
-
-  const handleNameChange = (event) => {
-    setNewName(event.target.value);
-  };
-
-  const handleNumberChange = (event) => {
-    setNewNumber(event.target.value);
-  };
-
-  const addPerson = (event) => {
-    event.preventDefault();
-    const _newName = newName.trim();
-
-    onNewPersonAdded({ name: _newName, number: newNumber });
-
-    setNewName("");
-    setNewNumber("");
-  };
-
-  return (
-    <form onSubmit={addPerson}>
-      <div>
-        name: <input value={newName} onChange={handleNameChange} />
-      </div>
-      <div>
-        number: <input value={newNumber} onChange={handleNumberChange} />
-      </div>
-      <div>
-        <button type="submit">add</button>
-      </div>
-    </form>
-  );
-};
-
-const Persons = ({ persons }) => {
-  return (
-    <div>
-      {persons.map((person) => (
-        <p key={person.name}>
-          {person.name} {person.number}
-        </p>
-      ))}
-    </div>
-  );
-};
+import personService from "./services/persons";
+import Filter from "./components/filter";
+import PersonForm from "./components/personForm";
+import Persons from "./components/persons";
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [showPersons, setShowPersons] = useState(persons);
   const [resetFilters, setResetFilters] = useState();
 
+  const setPersonsData = (persons) => {
+    setResetFilters(!resetFilters);
+    setPersons([...persons]);
+    setShowPersons([...persons]);
+  };
+
   useEffect(() => {
-    axios.get("http://localhost:3001/persons").then((response) => {
-      setPersons(response.data);
-      setShowPersons(response.data);
+    personService.getAll().then((persons) => {
+      setPersonsData(persons);
     });
   }, []);
 
-  const handleOnNewPersonAdded = (person) => {
-    if (persons.map((p) => p.name).find((p) => p === person.name)) {
+  const handleOnPersonPatch = (person) => {
+    const existingPerson = persons.find(
+      (p) => p.name.toLowerCase() === person.name.toLowerCase()
+    );
+
+    if (!existingPerson) {
+      personService.create(person).then((personRes) => {
+        setPersonsData([...persons, personRes]);
+      });
+      return;
+    }
+
+    if (existingPerson.number == person.number) {
       alert(`${person.name} is already added to phonebook`);
       return;
     }
-    setPersons([...persons, person]);
-    setShowPersons([...persons, person]);
-    setResetFilters(true);
+
+    if (
+      window.confirm(
+        `${person.name} is already added to phonebook, replace the old number with a new one?`
+      )
+    ) {
+      const { id, ...rest } = existingPerson;
+      personService
+        .update(id, { ...rest, number: person.number })
+        .then((personRes) => {
+          setPersonsData(
+            persons.map((p) => (p.id !== personRes.id ? p : personRes))
+          );
+        });
+      return;
+    }
+  };
+
+  const handleOnPersonDelete = (person) => {
+    personService.remove(person.id).then(() => {
+      const newArr = [...persons];
+      newArr.splice(persons.map((p) => p.id).indexOf(person.id), 1);
+      setPersonsData([...newArr]);
+    });
   };
 
   const handleNameFilter = (searchText) => {
@@ -113,9 +84,9 @@ const App = () => {
         resetFilters={resetFilters}
       />
       <h3>add a new</h3>
-      <PersonForm onNewPersonAdded={handleOnNewPersonAdded} />
+      <PersonForm onPersonPatch={handleOnPersonPatch} />
       <h3>Numbers</h3>
-      <Persons persons={showPersons} />
+      <Persons persons={showPersons} onDelete={handleOnPersonDelete} />
     </div>
   );
 };
