@@ -1,14 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
-const Filter = ({ onNameFilterChange }) => {
+const Filter = ({ onNameFilterChange, resetFilters }) => {
+  const [nameFilter, setNameFilter] = useState("");
+
+  useEffect(() => {
+    setNameFilter("");
+  }, [resetFilters]);
+
   const handleNameFilter = (event) => {
     const searchText = event.target.value;
+    setNameFilter(searchText);
     onNameFilterChange(searchText);
   };
 
   return (
     <div>
-      filter shown with: <input onChange={handleNameFilter} />
+      filter shown with:{" "}
+      <input value={nameFilter} onChange={handleNameFilter} />
     </div>
   );
 };
@@ -63,13 +72,16 @@ const Persons = ({ persons }) => {
 };
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: "Arto Hellas", number: "040-123456", id: 1 },
-    { name: "Ada Lovelace", number: "39-44-5323523", id: 2 },
-    { name: "Dan Abramov", number: "12-43-234345", id: 3 },
-    { name: "Mary Poppendieck", number: "39-23-6423122", id: 4 },
-  ]);
+  const [persons, setPersons] = useState([]);
   const [showPersons, setShowPersons] = useState(persons);
+  const [resetFilters, setResetFilters] = useState();
+
+  useEffect(() => {
+    axios.get("http://localhost:3001/persons").then((response) => {
+      setPersons(response.data);
+      setShowPersons(response.data);
+    });
+  }, []);
 
   const handleOnNewPersonAdded = (person) => {
     if (persons.map((p) => p.name).find((p) => p === person.name)) {
@@ -77,6 +89,8 @@ const App = () => {
       return;
     }
     setPersons([...persons, person]);
+    setShowPersons([...persons, person]);
+    setResetFilters(true);
   };
 
   const handleNameFilter = (searchText) => {
@@ -94,7 +108,10 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
-      <Filter onNameFilterChange={handleNameFilter} />
+      <Filter
+        onNameFilterChange={handleNameFilter}
+        resetFilters={resetFilters}
+      />
       <h3>add a new</h3>
       <PersonForm onNewPersonAdded={handleOnNewPersonAdded} />
       <h3>Numbers</h3>
