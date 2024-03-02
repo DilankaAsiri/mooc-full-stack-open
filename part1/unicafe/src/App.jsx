@@ -13,8 +13,14 @@ const Feedback = ({ onClickGood, onClickNeutral, onClickBad }) => {
 
 const Statistics = ({ good, neutral, bad }) => {
   const all = good + neutral + bad;
-  const average = all ? (good + bad * -1) / all : 0;
-  const postive = all ? (good / all) * 100 : 0;
+
+  if (!all) {
+    return <p>No feedback given</p>;
+  }
+
+  const average = (good + bad * -1) / all;
+  const postive = (good / all) * 100;
+
   return (
     <div>
       <h1>statistics</h1>
