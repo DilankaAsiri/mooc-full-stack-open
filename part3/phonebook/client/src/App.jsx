@@ -37,10 +37,15 @@ const App = () => {
     );
 
     if (!existingPerson) {
-      personService.create(person).then((personRes) => {
-        setPersonsData([...persons, personRes]);
-        showNotification(`Added ${personRes.name}`);
-      });
+      personService
+        .create(person)
+        .then((personRes) => {
+          setPersonsData([...persons, personRes]);
+          showNotification(`Added ${personRes.name}`);
+        })
+        .catch((err) => {
+          showNotification(err.response.data.error, true);
+        });
       return;
     }
 
