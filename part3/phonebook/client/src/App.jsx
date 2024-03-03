@@ -67,6 +67,9 @@ const App = () => {
             persons.map((p) => (p.id !== personRes.id ? p : personRes))
           );
           showNotification(`Updated ${personRes.name}`);
+        })
+        .catch((err) => {
+          showNotification(err.response.data.error, true);
         });
       return;
     }
