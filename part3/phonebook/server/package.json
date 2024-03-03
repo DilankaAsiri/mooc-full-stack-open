@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "build:ui": "rm -rf dist && cd ../client/ && npm run build && cp -r dist ../server",
+    "deploy": "fly deploy",
+    "deploy:full": "npm run build:ui && npm run deploy",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Dilanka Asiri",
@@ -16,6 +19,7 @@
     "morgan": "^1.10.0"
   },
   "devDependencies": {
+    "@flydotio/dockerfile": "^0.5.2",
     "nodemon": "^3.1.0"
   }
 }
