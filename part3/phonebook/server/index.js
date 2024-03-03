@@ -1,7 +1,10 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const morgan = require("morgan");
 const cors = require("cors");
+
+const Person = require("./models/person");
 
 morgan.token("body", (req, res) => JSON.stringify(req.body));
 
@@ -12,33 +15,6 @@ app.use(
 );
 app.use(express.static("dist"));
 
-const generateId = () => {
-  return Math.floor(Math.random() * 999999999999999);
-};
-
-let persons = [
-  {
-    id: 1,
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: 2,
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: 3,
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: 4,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
-
 app.get("/info", (request, response) => {
   response.send(
     `<div><p>Phonebooke has info for ${
@@ -47,7 +23,7 @@ app.get("/info", (request, response) => {
   );
 });
 
-app.post("/api/persons", (request, response) => {
+app.post("/api/persons", async (request, response) => {
   const body = request.body;
 
   if (!(body.name && body.number)) {
@@ -57,38 +33,57 @@ app.post("/api/persons", (request, response) => {
   }
 
   const name = body.name;
-  if (
-    persons.find((person) => person.name.toLowerCase() == name.toLowerCase())
-  ) {
+
+  const personExists = await Person.exists({
+    name: { $regex: name, $options: "i" },
+  });
+  if (personExists) {
     return response.status(400).json({
       error: "name must be unique",
     });
   }
 
-  const person = {
-    id: generateId(),
+  let person = new Person({
     name,
     number: body.number,
-  };
+  });
 
-  persons = persons.concat(person);
-
+  person = await person.save();
   response.json(person);
 });
 
-app.get("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id);
-  const person = persons.find((person) => person.id == id);
+app.get("/api/persons/:id", async (request, response) => {
+  const id = request.params.id;
+  const person = await Person.findById(id);
   response.json(person);
 });
 
-app.get("/api/persons", (request, response) => {
+app.get("/api/persons", async (request, response) => {
+  const persons = await Person.find({});
   response.json(persons);
 });
 
-app.delete("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id);
-  persons = persons.filter((person) => person.id !== id);
+app.patch("/api/persons/:id", async (request, response) => {
+  const id = request.params.id;
+  const body = request.body;
+
+  let person = await Person.findById(id);
+  if (!person) {
+    return response.status(404).json({
+      error: "person not found",
+    });
+  }
+
+  if (body.number) person.number = body.number;
+  person.isNew = false;
+
+  person = await person.save();
+  response.json(person);
+});
+
+app.delete("/api/persons/:id", async (request, response) => {
+  const id = request.params.id;
+  await Person.findByIdAndDelete(id);
   response.status(204).end();
 });
 
