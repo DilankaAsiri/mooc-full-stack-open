@@ -54,13 +54,15 @@ const App = () => {
         `${person.name} is already added to phonebook, replace the old number with a new one?`
       )
     ) {
-      const { id } = existingPerson;
-      personService.update(id, { number: person.number }).then((personRes) => {
-        setPersonsData(
-          persons.map((p) => (p.id !== personRes.id ? p : personRes))
-        );
-        showNotification(`Updated ${personRes.name}`);
-      });
+      const { id, ...rest } = existingPerson;
+      personService
+        .update(id, { ...rest, number: person.number })
+        .then((personRes) => {
+          setPersonsData(
+            persons.map((p) => (p.id !== personRes.id ? p : personRes))
+          );
+          showNotification(`Updated ${personRes.name}`);
+        });
       return;
     }
   };
