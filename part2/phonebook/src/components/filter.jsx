@@ -4,7 +4,6 @@ const Filter = ({ onNameFilterChange, resetFilters }) => {
   const [nameFilter, setNameFilter] = useState("");
 
   useEffect(() => {
-    console.log("reset");
     setNameFilter("");
   }, [resetFilters]);
 

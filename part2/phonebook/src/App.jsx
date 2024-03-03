@@ -24,12 +24,12 @@ const App = () => {
     });
   }, []);
 
-  const showNotification = (message, error = false)=>{
-    setNotification({ message, error})
-    setTimeout(()=>{
-      setNotification(null)
-    }, 3000)
-  }
+  const showNotification = (message, error = false) => {
+    setNotification({ message, error });
+    setTimeout(() => {
+      setNotification(null);
+    }, 3000);
+  };
 
   const handleOnPersonPatch = (person) => {
     const existingPerson = persons.find(
@@ -39,7 +39,7 @@ const App = () => {
     if (!existingPerson) {
       personService.create(person).then((personRes) => {
         setPersonsData([...persons, personRes]);
-        showNotification(`Added ${personRes.name}`)
+        showNotification(`Added ${personRes.name}`);
       });
       return;
     }
@@ -61,18 +61,30 @@ const App = () => {
           setPersonsData(
             persons.map((p) => (p.id !== personRes.id ? p : personRes))
           );
-          showNotification(`Updated ${personRes.name}`)
+          showNotification(`Updated ${personRes.name}`);
         });
       return;
     }
   };
 
   const handleOnPersonDelete = (person) => {
-    personService.remove(person.id).then(() => {
+    const removeFromLocalState = () => {
       const newArr = [...persons];
       newArr.splice(persons.map((p) => p.id).indexOf(person.id), 1);
       setPersonsData([...newArr]);
-    });
+    };
+    personService
+      .remove(person.id)
+      .then(() => removeFromLocalState())
+      .catch((err) => {
+        if (err.response.status == 404) {
+          removeFromLocalState();
+          showNotification(
+            `Information of ${person.name} has already been removed from server`,
+            true
+          );
+        }
+      });
   };
 
   const handleNameFilter = (searchText) => {
@@ -90,7 +102,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
-      <Notification notification={notification}/>
+      <Notification notification={notification} />
       <Filter
         onNameFilterChange={handleNameFilter}
         resetFilters={resetFilters}
